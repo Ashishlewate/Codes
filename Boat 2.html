@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pirate Ship Ocean Simulation</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: #87ceeb;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="ocean"></canvas>
+
+<script>
+const canvas = document.getElementById("ocean");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let waveOffset = 0;
+let shipX = -150;
+const shipY = canvas.height * 0.55;
+const shipSpeed = 1.8;
+
+// Draw ocean waves
+function drawWaves() {
+    ctx.fillStyle = "#0b3d91";
+    ctx.fillRect(0, canvas.height * 0.5, canvas.width, canvas.height);
+
+    ctx.strokeStyle = "#1e90ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    for (let x = 0; x < canvas.width; x++) {
+        const y = canvas.height * 0.5 +
+                  Math.sin((x + waveOffset) * 0.02) * 15;
+        ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+// Draw pirate ship
+function drawShip() {
+    const bob = Math.sin(waveOffset * 0.05) * 8;
+
+    // Hull
+    ctx.fillStyle = "#5a2d0c";
+    ctx.beginPath();
+    ctx.ellipse(shipX, shipY + bob, 80, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mast
+    ctx.fillStyle = "#3e1f0f";
+    ctx.fillRect(shipX - 5, shipY - 90 + bob, 10, 90);
+
+    // Sail
+    ctx.fillStyle = "#f5f5f5";
+    ctx.beginPath();
+    ctx.moveTo(shipX, shipY - 90 + bob);
+    ctx.lineTo(shipX + 70, shipY - 40 + bob);
+    ctx.lineTo(shipX, shipY - 40 + bob);
+    ctx.fill();
+
+    // Flag
+    ctx.fillStyle = "black";
+    ctx.fillRect(shipX + 5, shipY - 90 + bob, 30, 15);
+}
+
+// Animation loop
+function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawWaves();
+    drawShip();
+
+    shipX += shipSpeed;
+    if (shipX > canvas.width + 150) shipX = -150;
+
+    waveOffset += 2;
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+// Resize handling
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+
+</body>
+</html>

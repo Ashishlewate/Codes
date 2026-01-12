@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pirate Ship Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB 0%, #1E90FF 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ocean {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: #0C3D5E;
+            overflow: hidden;
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 100px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 100"><path d="M0,50 Q100,0 200,50 Q300,100 400,50 Q500,0 600,50 Q700,100 800,50 L800,100 L0,100 Z" fill="%23008B8B"/></svg>') repeat-x;
+            animation: wave 10s linear infinite;
+        }
+
+        .wave:nth-child(2) {
+            opacity: 0.5;
+            animation: wave 15s linear infinite reverse;
+            bottom: -10px;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-800px); }
+        }
+
+        .ship {
+            position: absolute;
+            bottom: 150px;
+            left: -200px;
+            width: 200px;
+            height: 150px;
+            animation: sail 20s linear infinite;
+        }
+
+        .hull {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200px;
+            height: 50px;
+            background: #8B4513;
+            border-radius: 0 0 50px 50px;
+        }
+
+        .mast {
+            position: absolute;
+            bottom: 50px;
+            left: 100px;
+            width: 10px;
+            height: 100px;
+            background: #A0522D;
+        }
+
+        .sail {
+            position: absolute;
+            bottom: 50px;
+            left: 105px;
+            width: 0;
+            height: 0;
+            border-left: 50px solid transparent;
+            border-right: 50px solid transparent;
+            border-bottom: 80px solid #FFF;
+        }
+
+        .flag {
+            position: absolute;
+            top: -10px;
+            left: 95px;
+            width: 30px;
+            height: 20px;
+            background: #000;
+            clip-path: polygon(0 0, 100% 0, 80% 100%, 0 100%);
+        }
+
+        .skull {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            width: 10px;
+            height: 10px;
+            background: #FFF;
+            border-radius: 50%;
+        }
+
+        @keyframes sail {
+            0% { transform: translateX(0) rotate(0deg); }
+            50% { transform: translateX(100vw) rotate(2deg); }
+            100% { transform: translateX(200vw) rotate(0deg); }
+        }
+
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
+        .ship {
+            animation: sail 20s linear infinite, bob 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="ocean">
+        <div class="wave"></div>
+        <div class="wave"></div>
+    </div>
+    <div class="ship">
+        <div class="hull"></div>
+        <div class="mast"></div>
+        <div class="sail"></div>
+        <div class="flag">
+            <div class="skull"></div>
+        </div>
+    </div>
+</body>
+</html>

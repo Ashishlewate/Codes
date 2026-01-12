@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pirate Ship Sailing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #canvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB 0%, #4A90A4 100%);
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .controls h3 {
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+
+        .controls p {
+            margin: 5px 0;
+        }
+
+        .info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        .info h3 {
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="controls">
+        <h3>⚓ Controls</h3>
+        <p>← → Arrow Keys: Steer</p>
+        <p>↑ ↓ Arrow Keys: Speed</p>
+        <p>Space: Drop Anchor</p>
+    </div>
+
+    <div class="info">
+        <h3>⛵ Ship Status</h3>
+        <p>Speed: <span id="speed">0</span> knots</p>
+        <p>Direction: <span id="direction">0</span>°</p>
+        <p>Wind: <span id="wind">SW</span></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Ship state
+        const ship = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            angle: 0,
+            speed: 0,
+            maxSpeed: 5,
+            acceleration: 0.1,
+            turnSpeed: 0.03,
+            anchored: false
+        };
+
+        // Wave properties
+        const waves = [];
+        const numWaves = 8;
+        for (let i = 0; i < numWaves; i++) {
+            waves.push({
+                y: (canvas.height / numWaves) * i,
+                offset: Math.random() * 1000,
+                speed: 0.5 + Math.random() * 0.5
+            });
+        }
+
+        // Clouds
+        const clouds = [];
+        for (let i = 0; i < 5; i++) {
+            clouds.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * 100 + 20,
+                speed: 0.2 + Math.random() * 0.3,
+                scale: 0.5 + Math.random() * 0.5
+            });
+        }
+
+        // Birds
+        const birds = [];
+        for (let i = 0; i < 3; i++) {
+            birds.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * 150 + 50,
+                speed: 1 + Math.random(),
+                wingPhase: Math.random() * Math.PI * 2
+            });
+        }
+
+        // Wind
+        let windAngle = Math.PI * 0.75; // Southwest
+        let windStrength = 1;
+
+        // Keyboard input
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (e.key === ' ') {
+                ship.anchored = !ship.anchored;
+            }
+        });
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        // Draw ocean waves
+        function drawOcean(time) {
+            ctx.fillStyle = '#2E86AB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let wave of waves) {
+                ctx.beginPath();
+                ctx.moveTo(0, wave.y);
+                
+                for (let x = 0; x <= canvas.width; x += 10) {
+                    const y = wave.y + Math.sin((x + wave.offset + time * wave.speed) / 50) * 15;
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                
+                const gradient = ctx.createLinearGradient(0, wave.y - 20, 0, wave.y + 20);
+                gradient.addColorStop(0, 'rgba(62, 156, 196, 0.3)');
+                gradient.addColorStop(1, 'rgba(46, 134, 171, 0.3)');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+
+        // Draw clouds
+        function drawClouds(time) {
+            for (let cloud of clouds) {
+                cloud.x += cloud.speed;
+                if (cloud.x > canvas.width + 100) cloud.x = -100;
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, 20 * cloud.scale, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 25 * cloud.scale, cloud.y, 25 * cloud.scale, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 50 * cloud.scale, cloud.y, 20 * cloud.scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Draw birds
+        function drawBirds(time) {
+            for (let bird of birds) {
+                bird.x += bird.speed;
+                if (bird.x > canvas.width + 50) bird.x = -50;
+                bird.wingPhase += 0.1;
+
+                ctx.save();
+                ctx.translate(bird.x, bird.y);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                
+                const wing = Math.sin(bird.wingPhase) * 10;
+                ctx.beginPath();
+                ctx.moveTo(-10, 0);
+                ctx.quadraticCurveTo(-5, wing, 0, 0);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.quadraticCurveTo(5, wing, 0, 0);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        // Draw ship
+        function drawShip() {
+            ctx.save();
+            ctx.translate(ship.x, ship.y);
+            ctx.rotate(ship.angle);
+
+            // Ship shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(5, 10, 35, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hull
+            ctx.fillStyle = '#654321';
+            ctx.beginPath();
+            ctx.moveTo(-30, 0);
+            ctx.lineTo(40, 0);
+            ctx.lineTo(30, 15);
+            ctx.lineTo(-25, 15);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.strokeStyle = '#4A3319';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Deck
+            ctx.fillStyle = '#8B6914';
+            ctx.fillRect(-25, 0, 60, 5);
+
+            // Mast
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(-5, -60, 5, 60);
+
+            // Sails
+            ctx.fillStyle = '#F5E6D3';
+            ctx.strokeStyle = '#D4C5B0';
+            ctx.lineWidth = 1;
+            
+            // Main sail
+            ctx.beginPath();
+            ctx.moveTo(0, -55);
+            ctx.lineTo(25, -45);
+            ctx.lineTo(25, -15);
+            ctx.lineTo(0, -10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Front sail
+            ctx.beginPath();
+            ctx.moveTo(0, -50);
+            ctx.lineTo(-20, -40);
+            ctx.lineTo(-20, -15);
+            ctx.lineTo(0, -10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Flag
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, -65, 1, 10);
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.moveTo(1, -65);
+            ctx.lineTo(15, -60);
+            ctx.lineTo(1, -55);
+            ctx.fill();
+            
+            // Skull and crossbones
+            ctx.fillStyle = '#FFF';
+            ctx.beginPath();
+            ctx.arc(8, -60, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(6, -58);
+            ctx.lineTo(10, -62);
+            ctx.moveTo(10, -58);
+            ctx.lineTo(6, -62);
+            ctx.stroke();
+
+            // Wake if moving
+            if (ship.speed > 0.5) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-30, 10);
+                ctx.quadraticCurveTo(-40, 15, -50, 25);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(-30, -5);
+                ctx.quadraticCurveTo(-40, -10, -50, -20);
+                ctx.stroke();
+            }
+
+            // Anchor if dropped
+            if (ship.anchored) {
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 15);
+                ctx.lineTo(0, 35);
+                ctx.moveTo(-5, 30);
+                ctx.lineTo(5, 30);
+                ctx.moveTo(-5, 35);
+                ctx.lineTo(0, 30);
+                ctx.lineTo(5, 35);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // Update ship physics
+        function updateShip() {
+            if (!ship.anchored) {
+                // Steering
+                if (keys['ArrowLeft']) ship.angle -= ship.turnSpeed;
+                if (keys['ArrowRight']) ship.angle += ship.turnSpeed;
+
+                // Speed control
+                if (keys['ArrowUp']) {
+                    ship.speed = Math.min(ship.speed + ship.acceleration, ship.maxSpeed);
+                }
+                if (keys['ArrowDown']) {
+                    ship.speed = Math.max(ship.speed - ship.acceleration, -ship.maxSpeed * 0.5);
+                }
+
+                // Natural deceleration
+                if (!keys['ArrowUp'] && !keys['ArrowDown']) {
+                    ship.speed *= 0.99;
+                }
+
+                // Wind effect
+                const windEffect = Math.cos(ship.angle - windAngle) * windStrength * 0.05;
+                ship.speed += windEffect;
+
+                // Movement
+                ship.x += Math.cos(ship.angle - Math.PI / 2) * ship.speed;
+                ship.y += Math.sin(ship.angle - Math.PI / 2) * ship.speed;
+
+                // Wrap around screen
+                if (ship.x < -50) ship.x = canvas.width + 50;
+                if (ship.x > canvas.width + 50) ship.x = -50;
+                if (ship.y < -50) ship.y = canvas.height + 50;
+                if (ship.y > canvas.height + 50) ship.y = -50;
+            } else {
+                ship.speed *= 0.95;
+            }
+
+            // Update UI
+            document.getElementById('speed').textContent = Math.abs(ship.speed).toFixed(1);
+            document.getElementById('direction').textContent = Math.round((ship.angle * 180 / Math.PI + 90) % 360);
+            
+            const windDir = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const windIdx = Math.round((windAngle * 180 / Math.PI + 180) / 45) % 8;
+            document.getElementById('wind').textContent = windDir[windIdx];
+        }
+
+        // Animation loop
+        let time = 0;
+        function animate() {
+            time++;
+            
+            drawOcean(time);
+            drawClouds(time);
+            drawBirds(time);
+            updateShip();
+            drawShip();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
